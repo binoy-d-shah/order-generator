@@ -94,10 +94,14 @@ downloadAllImagesBtn.addEventListener('click', async () => {
             const card = orderCards[i];
 
             // --- START OF CHANGES ---
-            // Extract order number directly from the card's ID for robustness
-            const cardId = card.id; // e.g., "order-card-12345"
-            const orderNumberMatch = cardId.match(/order-card-(\d+)/);
-            const orderNumber = orderNumberMatch ? orderNumberMatch[1] : `unknown`; // Use "unknown" as a fallback
+            // Get the download button within the current card to access its data-order-number attribute
+            const cardDownloadButton = card.querySelector('.download-image-btn');
+            let orderNumber = 'unknown'; // Default fallback
+
+            if (cardDownloadButton && cardDownloadButton.dataset.orderNumber) {
+                orderNumber = cardDownloadButton.dataset.orderNumber;
+            }
+            // --- END OF CHANGES ---
 
             displayMessage(`Generating image ${i + 1}/${orderCards.length} for order #${orderNumber}...`, 'info');
 
@@ -107,9 +111,8 @@ downloadAllImagesBtn.addEventListener('click', async () => {
                 logging: false
             });
             const dataUrl = canvas.toDataURL('image/png');
-            // New filename format: order-summary-{orderNumber}-{sequentialNumber}.png
+            // Filename format: order-summary-{orderNumber}-{sequentialNumber}.png
             downloadDataUrlAsFile(`order-summary-${orderNumber}-${i + 1}.png`, dataUrl);
-            // --- END OF CHANGES ---
         }
         displayMessage(`Successfully generated and downloaded all ${orderCards.length} order summaries as images.`, 'success');
     } catch (error) {
