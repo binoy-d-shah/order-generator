@@ -40,14 +40,13 @@ fetchSingleOrderBtn.addEventListener('click', () => {
 ordersContainer.addEventListener('click', async (event) => {
     if (event.target.classList.contains('download-image-btn')) {
         const button = event.target;
-        const orderNumber = button.dataset.orderNumber;
+        const orderNumber = button.dataset.orderNumber; // This already gets the correct order number for single downloads
         const targetId = button.dataset.targetId;
         const cardToDownload = document.getElementById(targetId);
 
         if (cardToDownload) {
             displayMessage(`Generating image for order #${orderNumber}...`, 'info');
 
-            // --- Start of changes for hiding button and setting scale ---
             button.style.display = 'none'; // Hide the button before capturing
             try {
                 const canvas = await html2canvas(cardToDownload, {
@@ -64,7 +63,6 @@ ordersContainer.addEventListener('click', async (event) => {
             } finally {
                 button.style.display = ''; // Show the button again after capture
             }
-            // --- End of changes ---
         } else {
             displayMessage(`Could not find order card with ID: ${targetId}`, 'error');
         }
@@ -82,7 +80,6 @@ downloadAllImagesBtn.addEventListener('click', async () => {
     imageGeneratingIndicator.classList.remove('hidden');
     displayMessage('Starting image generation for all orders...', 'info');
 
-    // --- Start of changes for hiding all buttons and setting scale ---
     const downloadButtons = []; // Store references to buttons to re-show them later
     orderCards.forEach(card => {
         const button = card.querySelector('.download-image-btn');
@@ -95,9 +92,12 @@ downloadAllImagesBtn.addEventListener('click', async () => {
     try {
         for (let i = 0; i < orderCards.length; i++) {
             const card = orderCards[i];
-            const h2Text = card.querySelector('h2').textContent;
-            const orderNumberMatch = h2Text.match(/#(\d+)/);
-            const orderNumber = orderNumberMatch ? orderNumberMatch[1] : `unknown-order-${i + 1}`;
+
+            // --- START OF CHANGES ---
+            // Extract order number directly from the card's ID for robustness
+            const cardId = card.id; // e.g., "order-card-12345"
+            const orderNumberMatch = cardId.match(/order-card-(\d+)/);
+            const orderNumber = orderNumberMatch ? orderNumberMatch[1] : `unknown`; // Use "unknown" as a fallback
 
             displayMessage(`Generating image ${i + 1}/${orderCards.length} for order #${orderNumber}...`, 'info');
 
@@ -107,7 +107,9 @@ downloadAllImagesBtn.addEventListener('click', async () => {
                 logging: false
             });
             const dataUrl = canvas.toDataURL('image/png');
-            downloadDataUrlAsFile(`order-summary-${orderNumber}.png`, dataUrl);
+            // New filename format: order-summary-{orderNumber}-{sequentialNumber}.png
+            downloadDataUrlAsFile(`order-summary-${orderNumber}-${i + 1}.png`, dataUrl);
+            // --- END OF CHANGES ---
         }
         displayMessage(`Successfully generated and downloaded all ${orderCards.length} order summaries as images.`, 'success');
     } catch (error) {
@@ -120,5 +122,4 @@ downloadAllImagesBtn.addEventListener('click', async () => {
             button.style.display = '';
         });
     }
-    // --- End of changes ---
 });
