@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Summary Viewer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .order-card {
+            background: #fff;
+            border-radius: 0.5rem;
+            padding: 1rem; /* Adjusted for mobile */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+        table {
+            width: 100%; /* Table takes full width of its container */
+            border-collapse: collapse;
+            margin-top: 1rem;
+            display: block; /* Make table a block element for overflow */
+            overflow-x: auto; /* Enable horizontal scrolling for tables on small screens */
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+        }
+        th, td {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 0.75rem;
+            text-align: left;
+            font-size: 0.875rem;
+            color: #4b5563;
+            white-space: nowrap; /* Prevent text wrapping in table cells by default */
+        }
+        th {
+            background: #f9fafb;
+            font-weight: 600;
+        }
+        .download-btn-container {
+            position: absolute;
+            top: 0.75rem; /* Adjusted for mobile */
+            right: 0.75rem; /* Adjusted for mobile */
+            z-index: 10; /* Ensure button is above other content */
+        }
+        /* Adjust card padding when download button is present to avoid overlap */
+        .order-card .download-btn-container + h2 {
+            margin-top: 2rem; /* Add space below the button container */
+        }
+
+        /* Responsive adjustments for headings and padding */
+        @media (max-width: 767px) {
+            .max-w-4xl {
+                padding: 1rem; /* Smaller padding on small screens */
+            }
+            h1 {
+                font-size: 2rem; /* Smaller heading on small screens */
+            }
+            h2 {
+                font-size: 1.25rem; /* Smaller sub-heading on small screens */
+            }
+            .order-card {
+                padding-top: 3.5rem; /* More space for the download button */
+            }
+        }
+
+        /* ----- New styles for alignment and A4 compatibility ----- */
+        .max-w-4xl {
+            /* This class is for the main content wrapper. */
+            /* Let's set a fixed max-width for better print predictability */
+            max-width: 700px; /* Approximately a good width for A4 content */
+            width: 100%; /* Ensure it takes full width up to max-width */
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .order-card p {
+            word-wrap: break-word; /* Allow long words to break and wrap */
+            overflow-wrap: break-word; /* Standard property */
+            white-space: normal; /* Allow text to wrap normally */
+        }
+
+        /* Print-specific styles for A4 output */
+        @media print {
+            body {
+                background-color: #fff; /* White background for print */
+            }
+            .max-w-4xl {
+                width: 100%; /* Take full width of page (within browser's print margins) */
+                max-width: none; /* Remove max-width constraint for print */
+                padding: 0; /* Remove padding for print, let print margins handle it */
+                box-shadow: none; /* No shadow on print */
+            }
+            .order-card {
+                box-shadow: none; /* No shadow on print */
+                margin-bottom: 0; /* No extra margin between cards for continuous flow */
+                border: none; /* No border for cleaner print */
+                page-break-inside: avoid; /* Avoid breaking cards across pages */
+                padding: 1cm; /* Consistent padding for print */
+            }
+            .download-btn-container,
+            #fetchOrdersBtn,
+            #fetchSingleOrderBtn,
+            #downloadAllImagesBtn,
+            #loadingIndicator,
+            #imageGeneratingIndicator,
+            #messageBox,
+            .p-4.sm\:p-6, /* Body padding */
+            .p-6.md\:p-8, /* Main wrapper padding */
+            .mb-8.p-4.border /* Input sections */
+             {
+                display: none !important; /* Hide UI elements when printing */
+            }
+            /* Ensure table and instructions take available width */
+            table, .order-card p {
+                width: 100%; /* Take full available width */
+            }
+            th, td {
+                white-space: normal; /* Allow table cells to wrap text on print */
+            }
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-6"> <div class="max-w-4xl mx-auto bg-white p-6 md:p-8 rounded-lg shadow-xl"> <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-6 text-center">Order Summary Generator</h1>
+
+        <div class="mb-8 p-4 border border-gray-200 rounded-md bg-gray-50">
+            <h2 class="text-lg sm:text-xl font-semibold text-gray-700 mb-4">Fetch Multiple Orders by Date & Slot</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6"> <div>
+                    <label for="orderDate" class="block text-sm font-medium text-gray-700 mb-1">Order Date</label>
+                    <input type="date" id="orderDate" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"> </div>
+                <div>
+                    <label for="orderSlot" class="block text-sm font-medium text-gray-700 mb-1">Order Slot</label>
+                    <select id="orderSlot" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"> <option value="all">All</option>
+                        <option value="morning">Morning (10:00-13:00)</option>
+                        <option value="evening">Evening (18:00-21:00)</option>
+                    </select>
+                </div>
+            </div>
+            <button id="fetchOrdersBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-lg shadow-md transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 mt-4 sm:mt-6 text-sm sm:text-base"> Fetch Orders by Date
+            </button>
+        </div>
+
+        <div class="mb-8 p-4 border border-gray-200 rounded-md bg-gray-50">
+            <h2 class="text-lg sm:text-xl font-semibold text-gray-700 mb-4">Fetch Single Order by Order ID</h2>
+            <div>
+                <label for="orderIdInput" class="block text-sm font-medium text-gray-700 mb-1">Order Number</label>
+                <input type="text" id="orderIdInput" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="Enter Order Number (e.g., 12345)"> </div>
+            <button id="fetchSingleOrderBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-lg shadow-md transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75 mt-4 sm:mt-6 text-sm sm:text-base"> Fetch Single Order
+            </button>
+        </div>
+
+        <button id="downloadAllImagesBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-lg shadow-md transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75 mt-4 hidden text-sm sm:text-base"> Download All Summaries as Images
+        </button>
+
+
+        <div id="loadingIndicator" class="mt-6 text-center text-blue-600 font-medium hidden">
+            <svg class="animate-spin h-5 w-5 text-blue-600 inline-block mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Fetching orders...
+        </div>
+
+        <div id="imageGeneratingIndicator" class="mt-6 text-center text-purple-600 font-medium hidden">
+            <svg class="animate-spin h-5 w-5 text-purple-600 inline-block mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Generating images... Please wait.
+        </div>
+
+        <div id="messageBox" class="mt-6 p-4 rounded-md hidden text-sm"></div> <div id="ordersContainer" class="mt-8">
+            <p class="text-center text-gray-500 text-sm">Enter details and click 'Fetch Orders' to see summaries.</p>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
