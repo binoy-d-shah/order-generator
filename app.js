@@ -46,9 +46,12 @@ ordersContainer.addEventListener('click', async (event) => {
 
         if (cardToDownload) {
             displayMessage(`Generating image for order #${orderNumber}...`, 'info');
+
+            // --- Start of changes for hiding button and setting scale ---
+            button.style.display = 'none'; // Hide the button before capturing
             try {
                 const canvas = await html2canvas(cardToDownload, {
-                    scale: 2,
+                    scale: 3, // Increased scale for higher resolution (suitable for A4 print)
                     useCORS: true,
                     logging: false
                 });
@@ -58,7 +61,10 @@ ordersContainer.addEventListener('click', async (event) => {
             } catch (error) {
                 console.error(`Error generating image for order #${orderNumber}:`, error);
                 displayMessage(`Failed to generate image for order #${orderNumber}. Error: ${error.message}`, 'error');
+            } finally {
+                button.style.display = ''; // Show the button again after capture
             }
+            // --- End of changes ---
         } else {
             displayMessage(`Could not find order card with ID: ${targetId}`, 'error');
         }
@@ -76,10 +82,19 @@ downloadAllImagesBtn.addEventListener('click', async () => {
     imageGeneratingIndicator.classList.remove('hidden');
     displayMessage('Starting image generation for all orders...', 'info');
 
+    // --- Start of changes for hiding all buttons and setting scale ---
+    const downloadButtons = []; // Store references to buttons to re-show them later
+    orderCards.forEach(card => {
+        const button = card.querySelector('.download-image-btn');
+        if (button) {
+            button.style.display = 'none'; // Hide all download buttons
+            downloadButtons.push(button);
+        }
+    });
+
     try {
         for (let i = 0; i < orderCards.length; i++) {
             const card = orderCards[i];
-            // Get order number from the H2 tag in the card
             const h2Text = card.querySelector('h2').textContent;
             const orderNumberMatch = h2Text.match(/#(\d+)/);
             const orderNumber = orderNumberMatch ? orderNumberMatch[1] : `unknown-order-${i + 1}`;
@@ -87,7 +102,7 @@ downloadAllImagesBtn.addEventListener('click', async () => {
             displayMessage(`Generating image ${i + 1}/${orderCards.length} for order #${orderNumber}...`, 'info');
 
             const canvas = await html2canvas(card, {
-                scale: 2,
+                scale: 3, // Increased scale for higher resolution (suitable for A4 print)
                 useCORS: true,
                 logging: false
             });
@@ -100,5 +115,10 @@ downloadAllImagesBtn.addEventListener('click', async () => {
         displayMessage(`Failed to generate all images. Some might have failed. Error: ${error.message}`, 'error');
     } finally {
         imageGeneratingIndicator.classList.add('hidden');
+        // Show all buttons again
+        downloadButtons.forEach(button => {
+            button.style.display = '';
+        });
     }
+    // --- End of changes ---
 });
