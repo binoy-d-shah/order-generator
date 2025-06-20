@@ -4,6 +4,7 @@
  * Displays a message in the message box.
  * @param {string} message The message to display.
  * @param {string} type The type of message (success, error, info).
+ * @returns {HTMLElement} The messageBox element for chaining operations.
  */
 function displayMessage(message, type) {
     const messageBox = document.getElementById('messageBox');
@@ -23,6 +24,8 @@ function displayMessage(message, type) {
             messageBox.classList.add('bg-blue-100', 'text-blue-800', 'border', 'border-blue-400');
             break;
     }
+
+    return messageBox; // Add this line to return the element
 }
 
 /**
