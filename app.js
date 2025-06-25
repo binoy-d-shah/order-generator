@@ -20,8 +20,12 @@ const month = String(today.getMonth() + 1).padStart(2, '0');
 const day = String(today.getDate()).padStart(2, '0');
 orderDateInput.value = `${year}-${month}-${day}`;
 
-// Set default order slot to 'morning'
-orderSlotSelect.value = 'morning';
+const currentHour = today.getHours();
+if (currentHour < 13) { // If current hour is before 1 PM (e.g., 0-12)
+    orderSlotSelect.value = 'morning';
+} else { // If current hour is 1 PM (13) or later
+    orderSlotSelect.value = 'evening';
+}
 
 // Event Listener for Fetch Orders button
 fetchOrdersBtn.addEventListener('click', () => {
